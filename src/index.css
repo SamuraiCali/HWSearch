@@ -66,3 +66,26 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+/* center the whole page content */
+.page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center; /* centers both horizontally and vertically */
+  padding: 1.5rem;
+}
+
+/* keep a nice readable width */
+.page > .container {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto; /* center container horizontally */
+  text-align: center; /* center inline content (headings, buttons) */
+}
+
+/* center the puzzle grid block */
+.puzzle {
+  margin: 1rem auto; /* horizontal centering */
+}
+fieldset[role="group"] {
+  justify-content: center;
+} /* center button group */

@@ -113,67 +113,86 @@ export default function App() {
   const [state, setState] = useState<State>(GOAL);
   const [busy, setBusy] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const PORTFOLIO = Array.from(
+    { length: 12 },
+    (_, i) => `/photos/img${i + 1}.jpg`
+  );
 
+  // Uses a random photo for users to try and solve
+  async function loadRandomPhoto() {
+    const src = PORTFOLIO[Math.floor(Math.random() * PORTFOLIO.length)];
+    const im = new Image();
+    im.crossOrigin = "anonymous";
+    im.onload = () => sliceImage(im);
+    im.src = src;
+  }
   // slice uploaded image to 3x3 data URLs
   async function sliceImage(image: HTMLImageElement) {
-    const size = 600;
+    const size = 600; // puzzle canvas size
     const c = canvasRef.current!;
     c.width = size;
     c.height = size;
     const ctx = c.getContext("2d")!;
-    // fit-cover crop
-    const arImg = image.width / image.height;
-    const s = size;
-    let sx = 0,
-      sy = 0,
-      sw = image.width,
-      sh = image.height;
-    if (arImg > 1) {
-      // wide → crop sides
-      sw = image.height;
-      sx = (image.width - sw) / 2;
-    } else {
-      // tall → crop top/bottom
-      sh = image.width;
-      sy = (image.height - sh) / 2;
-    }
-    ctx.clearRect(0, 0, s, s);
-    ctx.drawImage(image, sx, sy, sw, sh, 0, 0, s, s);
+    ctx.imageSmoothingEnabled = true;
 
-    const urls: string[] = [];
-    for (let r = 0; r < 3; r++)
-      for (let c2 = 0; c2 < 3; c2++) {
+    // 1) Letterbox background
+    ctx.fillStyle = "#f4f4f6"; // padding color
+    ctx.fillRect(0, 0, size, size);
+
+    // 2) Fit image fully inside square (contain)
+    const ar = image.width / image.height;
+    let dw: number, dh: number, dx: number, dy: number;
+    if (ar >= 1) {
+      // wide image
+      dw = size;
+      dh = Math.round(size / ar);
+      dx = 0;
+      dy = Math.round((size - dh) / 2);
+    } else {
+      // tall image
+      dh = size;
+      dw = Math.round(size * ar);
+      dy = 0;
+      dx = Math.round((size - dw) / 2);
+    }
+    ctx.drawImage(image, 0, 0, image.width, image.height, dx, dy, dw, dh);
+
+    // 3) Slice into 3×3 tiles
+    const N = 3,
+      tile = size / N,
+      urls: string[] = [];
+    // small overlap avoids seam lines between tiles
+    const pad = 0.5;
+    for (let r = 0; r < N; r++) {
+      for (let col = 0; col < N; col++) {
         const off = document.createElement("canvas");
-        off.width = s / 3;
-        off.height = s / 3;
+        off.width = tile;
+        off.height = tile;
         off
           .getContext("2d")!
           .drawImage(
             c,
-            c2 * (s / 3),
-            r * (s / 3),
-            s / 3,
-            s / 3,
+            col * tile - pad,
+            r * tile - pad,
+            tile + 2 * pad,
+            tile + 2 * pad,
             0,
             0,
-            s / 3,
-            s / 3
+            tile,
+            tile
           );
         urls.push(off.toDataURL());
       }
-    // Map tiles 1..8 to first 8 URLs, blank uses a solid color
+    }
+
+    // 4) Map tiles 1..8, create blank for 0
     const blank = (() => {
       const b = document.createElement("canvas");
-      b.width = s / 3;
-      b.height = s / 3;
+      b.width = tile;
+      b.height = tile;
       const bctx = b.getContext("2d")!;
-      bctx.fillStyle = "#eee";
-      bctx.fillRect(0, 0, s / 3, s / 3);
-      bctx.fillStyle = "#666";
-      bctx.font = "20px system-ui";
-      bctx.textAlign = "center";
-      bctx.textBaseline = "middle";
-      bctx.fillText(" ", s / 3 / 2, s / 3 / 2);
+      bctx.fillStyle = "#f4f4f6";
+      bctx.fillRect(0, 0, tile, tile);
       return b.toDataURL();
     })();
     setTiles([...urls.slice(0, 8), blank]);
@@ -237,63 +256,63 @@ export default function App() {
 
   useEffect(() => {
     if (!tiles) setState(GOAL);
+    {
+      loadRandomPhoto();
+    }
   }, [tiles]);
 
   return (
-    <div
-      style={{
-        maxWidth: 720,
-        margin: "2rem auto",
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <h1>8-Puzzle</h1>
-      <input type="file" accept="image/*" onChange={onFile} />
-      <div style={{ margin: "1rem 0", display: "flex", gap: 8 }}>
-        <button onClick={doShuffle} disabled={!tiles}>
-          Shuffle
-        </button>
-        <button onClick={doSolve} disabled={!tiles || busy}>
-          Solve optimally
-        </button>
-        <button onClick={() => setState(GOAL)} disabled={!tiles || busy}>
-          Reset
-        </button>
-      </div>
+    <div className="page">
+      <main className="container">
+        <div
+          style={{
+            maxWidth: 720,
+            margin: "2rem auto",
+            fontFamily: "system-ui, sans-serif",
+          }}
+        >
+          <h1>8-Puzzle</h1>
+          <fieldset role="group">
+            <input type="file" accept="image/*" onChange={onFile} />
+            <div style={{ margin: "1rem 0", display: "flex", gap: 8 }}>
+              <button onClick={doShuffle} disabled={!tiles}>
+                Shuffle
+              </button>
+              <button onClick={doSolve} disabled={!tiles || busy}>
+                Solve optimally
+              </button>
+              <button onClick={() => setState(GOAL)} disabled={!tiles || busy}>
+                Reset
+              </button>
+              <button onClick={loadRandomPhoto} disabled={busy}>
+                Random photo
+              </button>
+            </div>
+          </fieldset>
 
-      <div
-        style={{
-          width: 600,
-          height: 600,
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 4,
-          background: "#ccc",
-        }}
-      >
-        {grid.map((cell) => (
-          <div
-            key={cell.idx}
-            onClick={() => tryMove(cell.idx)}
-            style={{
-              background:
-                cell.v === 0
-                  ? "#eee"
-                  : `url(${cell.url}) center/cover no-repeat`,
-              display: "grid",
-              placeItems: "center",
-              fontSize: 24,
-              color: "#111",
-              cursor: "pointer",
-              userSelect: "none",
-            }}
-          >
-            {cell.v === 0 ? "" : ""}
+          <div className="grid">
+            <section>
+              <div className="puzzle">
+                {grid.map((cell) => (
+                  <div
+                    key={cell.idx}
+                    className="puzzle-tile"
+                    onClick={() => tryMove(cell.idx)}
+                    style={{
+                      background:
+                        cell.v === 0
+                          ? "var(--muted-color)"
+                          : `url(${cell.url}) center/cover no-repeat`,
+                    }}
+                  />
+                ))}
+              </div>
+            </section>
           </div>
-        ))}
-      </div>
 
-      <canvas ref={canvasRef} style={{ display: "none" }} />
+          <canvas ref={canvasRef} style={{ display: "none" }} />
+        </div>
+      </main>
     </div>
   );
 }

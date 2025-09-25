@@ -40,3 +40,24 @@
 .read-the-docs {
   color: #888;
 }
+.puzzle {
+  width: 600px;
+  height: 600px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  background: var(--muted-border-color);
+  margin: 1rem 0;
+}
+.puzzle-tile {
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 120ms;
+}
+.puzzle-tile:active {
+  transform: scale(0.98);
+}
