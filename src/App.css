@@ -61,3 +61,23 @@
 .puzzle-tile:active {
   transform: scale(0.98);
 }
+/* center the whole page */
+.page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+/* center content + buttons/text */
+.page > .container {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* center Pico button group */
+fieldset[role="group"] {
+  justify-content: center;
+}

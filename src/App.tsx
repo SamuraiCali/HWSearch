@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import "./App.css";
 
 // ----- 8-puzzle core -----
 // State is length-9 array with 0=blank, goal = [1,2,3,4,5,6,7,8,0]
@@ -255,10 +256,11 @@ export default function App() {
   );
 
   useEffect(() => {
-    if (!tiles) setState(GOAL);
-    {
-      loadRandomPhoto();
-    }
+    loadRandomPhoto(); // run once
+  }, []); // <-- empty deps
+
+  useEffect(() => {
+    if (!tiles) setState(GOAL); // keep if you want, harmless
   }, [tiles]);
 
   return (
